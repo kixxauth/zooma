@@ -1,0 +1,11 @@
+{
+  "name": "zooma",
+  "version": "1.0.0",
+  "description": "Zooma is a fast in-memory database",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Kris Walker (www.kixx.name)",
+  "license": "MIT"
+}
