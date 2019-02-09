@@ -1,8 +1,12 @@
+/* eslint-disable no-console */
 'use strict';
 
 const os = require('os');
 const path = require('path');
 const net = require('net');
+
+// Calling client.write(chunk) multiple times results in buffer chunks getting
+// mixed together. So, we'll need to parse the message.
 
 const fpath = path.join(os.tmpdir(), 'ncs.sock');
 
@@ -15,7 +19,7 @@ const server = net.createServer((client) => {
 	});
 
 	client.on('data', (buff) => {
-		console.log('received message size', buff.length);
+		console.log(`received chunk size: ${buff.length}bytes`);
 	});
 });
 

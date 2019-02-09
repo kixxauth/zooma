@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 'use strict';
 
 const os = require('os');
@@ -6,6 +7,11 @@ const net = require('net');
 
 // tests:
 // 1. max message size 8192
+// 2. max message size 8192
+// 3. max message size 8192
+//
+// Note that 8192 is exactly 1/2 of the 16kb highWaterMark.
+//
 
 const fpath = path.join(os.tmpdir(), 'ncs.sock');
 
@@ -21,22 +27,70 @@ function genString(length) {
 	return str.slice(0, length);
 }
 
-const client = net.createConnection({ path: fpath }, () => {
-	console.log('connected');
+function delay(ms) {
+	return new Promise((resolve) => {
+		setTimeout(resolve, ms);
+	});
+}
 
-	let size = 10;
+function sendMessage(client, message) {
+	return new Promise((resolve, reject) => {
+		const chunks = [ 'HEADER', message, 'TRAILER' ];
+		let canWrite = true;
 
-	setInterval(() => {
-		if (size < 10000000) {
-			size = size * 10;
-		} else {
-			size += 1000;
+		function resolveOrReject(err, res) {
+			client.removeListener('error', onError);
+			client.removeListener('drain', onDrain);
+			if (err) return reject(err);
+			return resolve(true);
 		}
-		const str = genString(size);
-		console.log('sent message size', Buffer.byteLength(str));
-		client.write(str);
-		console.log('client buffer size', client.bufferSize);
-	}, 1000);
+
+		function onError(err) {
+			resolveOrReject(err);
+		}
+
+		function onDrain() {
+			canWrite = true;
+			sendNextChunk();
+		}
+
+		client.on('error', onError);
+		client.on('drain', onDrain);
+
+		function sendNextChunk() {
+			if (!canWrite) return;
+			if (chunks.length === 0) return resolveOrReject(null, true);
+
+			const chunk = chunks.shift();
+			canWrite = client.write(chunk);
+
+			console.log(`sent chunk size    : ${Buffer.byteLength(chunk)}bytes`);
+			console.log(`client buffer size : ${Math.ceil(client.bufferSize / 1024)}kb`);
+
+			sendNextChunk();
+		}
+
+		sendNextChunk();
+	});
+}
+
+const client = net.createConnection({ path: fpath }, () => {
+	console.log(`connected to ${fpath}`);
+
+	let size = 0;
+
+	function sendNextMessage() {
+		return delay(1500).then(() => {
+			size += 1000;
+			const message = genString(size);
+			return sendMessage(client, message).then(sendNextMessage);
+		}).catch((err) => {
+			console.log('Fatal client error:');
+			console.log(err.stack);
+		});
+	}
+
+	sendNextMessage();
 });
 
 client.on('error', (err) => {
