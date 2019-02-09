@@ -4,8 +4,12 @@
   "description": "Zooma is a fast in-memory database",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "eslint ./",
+    "lint": "eslint ./"
   },
   "author": "Kris Walker (www.kixx.name)",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "5.13.0"
+  }
 }
